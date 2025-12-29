@@ -1,14 +1,22 @@
 import { HexagonState, ColorSet } from './types';
 import { LETTERS, COLOR_SETS, DEFAULT_COLOR, HEX_GRID_LAYOUT } from './constants';
 import { rgbToHex, getRandomIndex } from './utils';
+import { WinChecker } from './winChecker';
 
 export class HexGrid {
     private gridId: string;
     private currentColorSetIndex: number = 0;
     private isSwapped: boolean = false;
+    private winChecker: WinChecker;
+    private onWinCallback: ((color: 'red' | 'green') => void) | null = null;
 
     constructor(gridId: string) {
         this.gridId = gridId;
+        this.winChecker = new WinChecker(gridId);
+    }
+
+    setOnWinCallback(callback: (color: 'red' | 'green') => void): void {
+        this.onWinCallback = callback;
     }
 
     createHexGrid(): void {
@@ -103,6 +111,17 @@ export class HexGrid {
         const hexagons: { [key: string]: HexagonState } = this.collectHexagonStates();
         const lettersOrder: string[] = this.getLettersOrder();
         this.updateGrid(hexagons, lettersOrder);
+
+        setTimeout(() => {
+            this.checkForWin();
+        }, 50);
+    }
+
+    private checkForWin(): void {
+        const result = this.winChecker.checkWin();
+        if (result.hasWon && result.winColor && this.onWinCallback) {
+            this.onWinCallback(result.winColor);
+        }
     }
 
     private collectHexagonStates(): { [key: string]: HexagonState } {

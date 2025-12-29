@@ -60,6 +60,12 @@ function setupEventListeners(): void {
             installHandler.handleInstallClick();
         });
     }
+
+    hexGrid.setOnWinCallback((winColor: 'red' | 'green') => {
+        console.log(`تم الفوز بلون: ${winColor}`);
+        partyMode.updateColorSetIndex(hexGrid.getCurrentColorSetIndex());
+        partyMode.startPartyMode();
+    });
 }
 
 window.addEventListener('load', () => {
