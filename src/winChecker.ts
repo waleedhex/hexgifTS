@@ -24,9 +24,9 @@ export class WinChecker {
 
     private checkColorPath(targetColor: string): boolean {
         const colorMap = this.buildColorMap();
-        const startPositions = this.getEdgePositions('top', targetColor, colorMap);
+        const topPositions = this.getTopEdgePositions(targetColor, colorMap);
 
-        for (const startPos of startPositions) {
+        for (const startPos of topPositions) {
             if (this.hasPathToBottom(startPos, targetColor, colorMap)) {
                 return true;
             }
@@ -41,49 +41,27 @@ export class WinChecker {
 
         if (!grid) return colorMap;
 
-        const hexagons = grid.querySelectorAll('.hexagon');
-
-        hexagons.forEach((hex: Element) => {
-            const computedStyle = window.getComputedStyle(hex);
-            const bgColor = computedStyle.backgroundColor;
-            const hexElement = hex as HTMLElement;
-            const row = Array.from(hexElement.parentElement?.children || []).indexOf(hexElement);
-
-            const style = hexElement.style.backgroundColor || bgColor;
-            const normalizedColor = this.normalizeColor(style);
-
-            if (row >= 0) {
-                const rowIndex = this.getRowIndex(hexElement);
-                const colIndex = this.getColIndex(hexElement);
+        const rows = grid.querySelectorAll('.row');
+        rows.forEach((row: Element, rowIndex: number) => {
+            const hexagons = row.querySelectorAll('.hexagon');
+            hexagons.forEach((hex: Element, colIndex: number) => {
+                const hexElement = hex as HTMLElement;
+                const style = hexElement.style.backgroundColor;
+                const computedStyle = window.getComputedStyle(hexElement);
+                const bgColor = style || computedStyle.backgroundColor;
+                const normalizedColor = this.normalizeColor(bgColor);
                 const key = `${rowIndex},${colIndex}`;
                 colorMap.set(key, normalizedColor);
-            }
+            });
         });
 
         return colorMap;
     }
 
-    private getRowIndex(hex: HTMLElement): number {
-        const row = hex.parentElement;
-        if (!row) return -1;
-
-        const grid = document.getElementById(this.gridId);
-        if (!grid) return -1;
-
-        const rows = Array.from(grid.querySelectorAll('.row'));
-        return rows.indexOf(row);
-    }
-
-    private getColIndex(hex: HTMLElement): number {
-        const row = hex.parentElement;
-        if (!row) return -1;
-
-        const hexagons = Array.from(row.querySelectorAll('.hexagon'));
-        return hexagons.indexOf(hex);
-    }
-
     private normalizeColor(color: string): string {
+        if (!color) return '';
         if (color.startsWith('#')) return color.toLowerCase();
+
         if (color.includes('rgb')) {
             const match = color.match(/\d+/g);
             if (match && match.length >= 3) {
@@ -93,29 +71,34 @@ export class WinChecker {
                 return `#${r}${g}${b}`.toLowerCase();
             }
         }
-        return color;
+        return '';
     }
 
-    private getEdgePositions(edge: string, targetColor: string, colorMap: Map<string, string>): HexPosition[] {
+    private getTopEdgePositions(targetColor: string, colorMap: Map<string, string>): HexPosition[] {
         const positions: HexPosition[] = [];
         const layout = HEX_GRID_LAYOUT;
 
-        if (edge === 'top') {
-            layout[0].forEach((_, colIndex) => {
-                const key = `0,${colIndex}`;
-                if (colorMap.get(key) === targetColor) {
-                    positions.push({ row: 0, col: colIndex });
-                }
-            });
-        }
+        layout[0].forEach((_, colIndex) => {
+            const key = `0,${colIndex}`;
+            const color = colorMap.get(key);
+            if (this.isTargetColor(color, targetColor)) {
+                positions.push({ row: 0, col: colIndex });
+            }
+        });
 
         return positions;
+    }
+
+    private isTargetColor(color: string | undefined, targetColor: string): boolean {
+        if (!color) return false;
+        const normalizedTarget = targetColor.toLowerCase();
+        return color === normalizedTarget;
     }
 
     private hasPathToBottom(start: HexPosition, targetColor: string, colorMap: Map<string, string>): boolean {
         const visited = new Set<string>();
         const queue: HexPosition[] = [start];
-        const layout = HEX_GRID_LAYOUT;
+        const bottomRow = HEX_GRID_LAYOUT.length - 1;
 
         while (queue.length > 0) {
             const current = queue.shift();
@@ -126,7 +109,12 @@ export class WinChecker {
             if (visited.has(key)) continue;
             visited.add(key);
 
-            if (current.row === layout.length - 1 && colorMap.get(key) === targetColor) {
+            const currentColor = colorMap.get(key);
+            if (!this.isTargetColor(currentColor, targetColor)) {
+                continue;
+            }
+
+            if (current.row === bottomRow) {
                 return true;
             }
 
@@ -168,7 +156,8 @@ export class WinChecker {
 
             if (newRow >= 0 && newRow < layout.length && newCol >= 0 && newCol < layout[newRow].length) {
                 const key = `${newRow},${newCol}`;
-                if (colorMap.get(key) === targetColor) {
+                const color = colorMap.get(key);
+                if (this.isTargetColor(color, targetColor)) {
                     neighbors.push({ row: newRow, col: newCol });
                 }
             }

@@ -9,6 +9,7 @@ export class HexGrid {
     private isSwapped: boolean = false;
     private winChecker: WinChecker;
     private onWinCallback: ((color: 'red' | 'green') => void) | null = null;
+    private hasWon: boolean = false;
 
     constructor(gridId: string) {
         this.gridId = gridId;
@@ -118,10 +119,17 @@ export class HexGrid {
     }
 
     private checkForWin(): void {
+        if (this.hasWon) return;
+
         const result = this.winChecker.checkWin();
         if (result.hasWon && result.winColor && this.onWinCallback) {
+            this.hasWon = true;
             this.onWinCallback(result.winColor);
         }
+    }
+
+    resetWin(): void {
+        this.hasWon = false;
     }
 
     private collectHexagonStates(): { [key: string]: HexagonState } {
@@ -185,6 +193,7 @@ export class HexGrid {
     }
 
     shuffle(): void {
+        this.resetWin();
         const hexagons: { [key: string]: HexagonState } = {};
         const availableLetters: string[] = [...LETTERS];
         const shuffled: string[] = [];
