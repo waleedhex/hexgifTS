@@ -24,9 +24,24 @@ export class WinChecker {
 
     private checkColorPath(targetColor: string): boolean {
         const colorMap = this.buildColorMap();
-        const topPositions = this.getTopEdgePositions(targetColor, colorMap);
+        const grid = document.getElementById(this.gridId);
+        if (!grid) return false;
 
-        for (const startPos of topPositions) {
+        const rows = grid.querySelectorAll('.row');
+        const startingPositions: HexPosition[] = [];
+
+        for (let rowIndex = 0; rowIndex < Math.ceil(rows.length / 2); rowIndex++) {
+            for (let colIndex = 0; colIndex < 7; colIndex++) {
+                const key = `${rowIndex},${colIndex}`;
+                const color = colorMap.get(key);
+
+                if (this.isTargetColor(color, targetColor)) {
+                    startingPositions.push({ row: rowIndex, col: colIndex });
+                }
+            }
+        }
+
+        for (const startPos of startingPositions) {
             if (this.hasPathToBottom(startPos, targetColor, colorMap)) {
                 return true;
             }
@@ -77,20 +92,6 @@ export class WinChecker {
             }
         }
         return '';
-    }
-
-    private getTopEdgePositions(targetColor: string, colorMap: Map<string, string>): HexPosition[] {
-        const positions: HexPosition[] = [];
-
-        for (let colIndex = 0; colIndex < 7; colIndex++) {
-            const key = `0,${colIndex}`;
-            const color = colorMap.get(key);
-            if (this.isTargetColor(color, targetColor)) {
-                positions.push({ row: 0, col: colIndex });
-            }
-        }
-
-        return positions;
     }
 
     private isTargetColor(color: string | undefined, targetColor: string): boolean {
