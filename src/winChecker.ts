@@ -46,6 +46,11 @@ export class WinChecker {
             const hexagons = row.querySelectorAll('.hexagon');
             hexagons.forEach((hex: Element, colIndex: number) => {
                 const hexElement = hex as HTMLElement;
+
+                if (!hexElement.classList.contains('changeable')) {
+                    return;
+                }
+
                 const style = hexElement.style.backgroundColor;
                 const computedStyle = window.getComputedStyle(hexElement);
                 const bgColor = style || computedStyle.backgroundColor;
@@ -76,15 +81,14 @@ export class WinChecker {
 
     private getTopEdgePositions(targetColor: string, colorMap: Map<string, string>): HexPosition[] {
         const positions: HexPosition[] = [];
-        const layout = HEX_GRID_LAYOUT;
 
-        layout[0].forEach((_, colIndex) => {
+        for (let colIndex = 0; colIndex < 7; colIndex++) {
             const key = `0,${colIndex}`;
             const color = colorMap.get(key);
             if (this.isTargetColor(color, targetColor)) {
                 positions.push({ row: 0, col: colIndex });
             }
-        });
+        }
 
         return positions;
     }
